@@ -1,101 +1,120 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
+import { CurrencyCard } from "./components/currency-card";
+import { UseConvert } from "./hooks/use-convert";
+import { UseCurrency } from "./hooks/use-currency";
+import RightArrow from "./svg/right-arrow";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  // I made a distinction between the left and right values of the two cards shown to the user in the main page
+  // because the user can switch from converting the values from left to right and vice versa.
+  const [leftValue, setLeftValue] = useState(0);
+  const [rightValue, setRightValue] = useState(0);
+  const [selectedCurrencyLeft, setSelectedCurrencyLeft] = useState<string>("");
+  const [selectedCurrencyRight, setSelectedCurrencyRight] =
+    useState<string>("");
+  // Boolean for the direction of conversion
+  const [reverse, setReverse] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Hook for fetching the Currency Options shown to the user in the dropdown selection
+  const { currencies, fetchCurrencyError, fetchCurrencyLoading } =
+    UseCurrency();
+  // Hook which includes the function that calls the conversion api endpoint from fastforex
+  const { convert, convertedValue, convertingError, convertLoading } =
+    UseConvert();
+
+  const error = fetchCurrencyError || convertingError;
+  const loading = fetchCurrencyLoading || convertLoading;
+
+  // This useEffect calls the conversion function everytime the user
+  // 1. Selects a currency option from both cards
+  // 2. Inputs a number value in the available number input
+  // 3. Changes a currency option in one of the cards
+  useEffect(
+    () => {
+      const convertValues = async () => {
+        // This basically flips the params given to the conversion function based on the set direction of conversion (L->R/R->L)
+        const conversionParams = {
+          // From is the base currency
+          from: !reverse ? selectedCurrencyLeft : selectedCurrencyRight,
+          // To is the destination currency for conversion
+          to: !reverse ? selectedCurrencyRight : selectedCurrencyLeft,
+          // Money value
+          amount: !reverse ? leftValue.toString() : rightValue.toString(),
+        };
+        await convert(conversionParams);
+      };
+
+      // If statement checks if both currency options have been chosen,
+      // and checks ONLY leftValue or ONLY rightValue, depending on the set direction of conversion
+      if (
+        (reverse ? rightValue : leftValue) &&
+        selectedCurrencyLeft &&
+        selectedCurrencyRight
+      )
+        convertValues();
+    },
+    // The ternary here is similar to the if-statement above
+    // Only update useEffect based on rightValue/leftValue based on the set direction of conversion
+    [
+      reverse ? rightValue : leftValue,
+      selectedCurrencyLeft,
+      selectedCurrencyRight,
+    ]
+  );
+
+  // Everytime a value has been successfully converted, this useEffect will update the corresponding card
+  useEffect(() => {
+    if (convertedValue) {
+      if (reverse) {
+        setLeftValue(convertedValue);
+      } else {
+        setRightValue(convertedValue);
+      }
+    }
+  }, [convertedValue]);
+
+  return (
+    <div className="flex flex-col w-full h-full">
+      <title>Currency Converter</title>
+      <main className="flex flex-col w-full h-full flex-wrap justify-center items-center h-svh">
+        <label className="text-6xl mt-16">Currency Converter</label>
+        <div className="flex flex-1 flex-row w-full justify-center items-center gap-6">
+          <CurrencyCard
+            value={leftValue}
+            onChangeValue={setLeftValue}
+            currencyOptions={currencies}
+            currency={selectedCurrencyLeft}
+            onChangeCurrency={(option) => {
+              setSelectedCurrencyLeft(option);
+            }}
+            isBase={!reverse}
+            loading={loading}
+          />
+          <div
+            className="flex flex-wrap content-center"
+            onClick={() => {
+              setReverse((v) => !v);
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <RightArrow flip={reverse} />
+          </div>
+          <CurrencyCard
+            value={rightValue}
+            onChangeValue={setRightValue}
+            currencyOptions={currencies}
+            currency={selectedCurrencyRight}
+            onChangeCurrency={(option) => {
+              setSelectedCurrencyRight(option);
+            }}
+            isBase={reverse}
+            loading={loading}
+          />
         </div>
+        {error ? (
+          <div className="text-white text-4xl pb-8">{`There was a problem: ${fetchCurrencyError}`}</div>
+        ) : null}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
