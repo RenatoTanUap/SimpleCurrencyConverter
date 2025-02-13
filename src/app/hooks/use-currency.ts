@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 
+interface CurrenciesRes {
+  [key: string]: string;
+}
+
 interface UseCurrencyProps {
-  currencies: {
-    [key: string]: string;
-  };
+  currencies: CurrenciesRes;
   fetchCurrencyError: string | null;
   fetchCurrencyLoading: boolean;
 }
 
 export const UseCurrency = (): UseCurrencyProps => {
-  const [currencies, setCurrencies] = useState<{}>([]);
+  const [currencies, setCurrencies] = useState<CurrenciesRes>({});
   const [fetchCurrencyLoading, setFetchCurrencyLoading] = useState(true);
   const [fetchCurrencyError, setError] = useState<string | null>(null);
 

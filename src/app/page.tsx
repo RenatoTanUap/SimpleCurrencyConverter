@@ -26,6 +26,8 @@ export default function Home() {
   const error = fetchCurrencyError || convertingError;
   const loading = fetchCurrencyLoading || convertLoading;
 
+  const baseValue = reverse ? rightValue : leftValue;
+
   // This useEffect calls the conversion function everytime the user
   // 1. Selects a currency option from both cards
   // 2. Inputs a number value in the available number input
@@ -47,20 +49,12 @@ export default function Home() {
 
       // If statement checks if both currency options have been chosen,
       // and checks ONLY leftValue or ONLY rightValue, depending on the set direction of conversion
-      if (
-        (reverse ? rightValue : leftValue) &&
-        selectedCurrencyLeft &&
-        selectedCurrencyRight
-      )
+      if (baseValue && selectedCurrencyLeft && selectedCurrencyRight)
         convertValues();
     },
     // The ternary here is similar to the if-statement above
     // Only update useEffect based on rightValue/leftValue based on the set direction of conversion
-    [
-      reverse ? rightValue : leftValue,
-      selectedCurrencyLeft,
-      selectedCurrencyRight,
-    ]
+    [baseValue, selectedCurrencyLeft, selectedCurrencyRight]
   );
 
   // Everytime a value has been successfully converted, this useEffect will update the corresponding card

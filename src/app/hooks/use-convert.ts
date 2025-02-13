@@ -6,7 +6,6 @@ interface ConvertParams {
   from: string;
   to: string;
   amount: string;
-  precision?: number;
 }
 
 interface UseConvertProps {
@@ -21,7 +20,7 @@ export const UseConvert = (): UseConvertProps => {
   const [convertLoading, setConvertLoading] = useState(false);
   const [convertingError, setConvertingError] = useState<string | null>(null);
 
-  const convert = async ({ from, to, amount, precision }: ConvertParams) => {
+  const convert = async ({ from, to, amount }: ConvertParams) => {
     setConvertLoading(true);
     try {
       const options = {
